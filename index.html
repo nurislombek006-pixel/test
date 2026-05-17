@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тренажер: Экономика Pro</title>
+    <script src="tele-secure.js" defer></script>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --accent: #7a9eb1;
+            --text: #546e7a;
+            --border: #e0e0e0;
+            --success: #aed581;
+            --error: #ff8a80;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg-color); color: var(--text); margin: 0; padding: 20px; }
+
+        /* Имя создателя */
+        .creator {
+            position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+            font-size: 10px; color: rgba(0,0,0,0.2); letter-spacing: 3px; z-index: 1000; pointer-events: none;
+        }
+
+        .card { 
+            background: var(--card-bg); max-width: 600px; margin: 30px auto; padding: 30px; 
+            border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); 
+            animation: fadeIn 0.5s ease; position: relative;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h1 { text-align: center; font-weight: 300; color: var(--accent); margin-top: 0; }
+
+        /* Поля настроек */
+        .settings-grid { display: grid; gap: 15px; margin-bottom: 25px; }
+        .s-item { display: flex; justify-content: space-between; align-items: center; background: #fafafa; padding: 12px 15px; border-radius: 12px; border: 1px solid var(--border); }
+        input, select { border: 1px solid var(--border); padding: 8px; border-radius: 8px; outline: none; color: var(--text); width: 80px; text-align: center; }
+        input:focus { border-color: var(--accent); }
+
+        /* Кнопки */
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 14px; cursor: pointer; font-weight: 600; transition: 0.3s; margin-top: 10px; text-transform: uppercase; font-size: 0.9em; }
+        .btn-main { background: var(--accent); color: white; }
+        .btn-main:hover { opacity: 0.9; transform: translateY(-2px); }
+        .btn-outline { background: #f0f0f0; color: #666; }
+
+        /* Тест */
+        .timer-row { display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: bold; }
+        .progress-bar { height: 4px; background: #eee; border-radius: 2px; margin-bottom: 20px; }
+        #progress-fill { height: 100%; background: var(--accent); width: 0%; transition: 0.4s; }
+        
+        .options { list-style: none; padding: 0; }
+        .options li { 
+            padding: 15px; margin-bottom: 10px; border: 2px solid #f0f0f0; border-radius: 12px; 
+            cursor: pointer; transition: 0.2s; 
+        }
+        .options li:hover { border-color: var(--accent); background: #fcfcfc; }
+        .options li.selected { border-color: var(--accent); background: #f0f7ff; }
+        .options li.correct { background: var(--success) !important; color: white; border-color: #9ccc65; }
+        .options li.wrong { background: var(--error) !important; color: white; border-color: #ef5350; }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="creator">@NURISLOMBEKM</div>
+
+<!-- ГЛАВНЫЙ ЭКРАН -->
+<div id="start-screen" class="card">
+    <h1>📚 Настройки</h1>
+    <div class="settings-grid">
+        <div class="s-item"><span>Время (сек):</span> <input type="number" id="cfg-time" value="1200"></div>
+        <div class="s-item"><span>Количество:</span> <input type="number" id="cfg-count" value="20"></div>
+        <div class="s-item"><span>Диапазон:</span> 
+            <div><input type="number" id="cfg-start" value="1" style="width:50px"> - <input type="number" id="cfg-end" value="300" style="width:50px"></div>
+        </div>
+        <div class="s-item"><span>Порядок:</span> 
+            <select id="cfg-order"><option value="random">Случайный</option><option value="list">По порядку</option></select>
+        </div>
+    </div>
+    <button class="btn btn-main" onclick="initTest(true)">Начать с таймером</button>
+    <button class="btn btn-outline" onclick="initTest(false)">Без таймера</button>
+</div>
+
+<!-- ЭКРАН ТЕСТА -->
+<div id="test-screen" class="card hidden">
+    <div class="timer-row">
+        <span id="timer-display">00:00</span>
+        <span id="q-counter">1 / 20</span>
+    </div>
+    <div class="progress-bar"><div id="progress-fill"></div></div>
+    
+    <div id="q-text" style="font-size: 1.2em; margin-bottom: 20px; min-height: 50px;"></div>
+    <ul id="q-options" class="options"></ul>
+    
+    <div style="display: flex; gap: 10px;">
+        <button class="btn btn-outline" onclick="prevQuestion()" style="width: 40%">Назад</button>
+        <button id="next-btn" class="btn btn-main hidden" onclick="nextQuestion()">Дальше</button>
+        <button id="skip-btn" class="btn btn-outline" onclick="nextQuestion()">Пропустить</button>
+    </div>
+</div>
+
+<!-- РЕЗУЛЬТАТЫ -->
+<div id="result-screen" class="card hidden">
+    <h1>Финиш</h1>
+    <h2 id="final-score" style="text-align:center; font-size:3em; color:var(--accent);"></h2>
+    <div id="review-container" style="max-height: 300px; overflow-y: auto; margin: 20px 0; font-size: 0.9em;"></div>
+    <button class="btn btn-main" onclick="location.reload()">В начало</button>
+</div>
+
+<script>
+    let database = []; // Сюда загрузится ваш JSON
+    let sessionQuestions = [];
+    let userAnswers = [];
+    let currentIdx = 0;
+    let timeLeft = 0;
+    let timerInterval;
+
+    // Эмуляция загрузки базы
+    fetch('micro_tests.json').then(r => r.json()).then(data => {
+        database = data;
+        document.getElementById('cfg-end').value = database.length;
+    }).catch(() => {
+        // Если файла нет, создаем заглушку для теста
+        database = [{question: "Пример вопроса?", options: ["Да", "Нет"], answer: 0}];
+    });
+
+    function initTest(useTimer) {
+        const start = parseInt(document.getElementById('cfg-start').value) - 1;
+        const end = parseInt(document.getElementById('cfg-end').value);
+        let pool = database.slice(Math.max(0, start), end);
+
+        if (document.getElementById('cfg-order').value === 'random') {
+            pool.sort(() => Math.random() - 0.5);
+        }
+
+        sessionQuestions = pool.slice(0, parseInt(document.getElementById('cfg-count').value));
+        userAnswers = new Array(sessionQuestions.length).fill(null);
+        currentIdx = 0;
+
+        if (useTimer) {
+            timeLeft = parseInt(document.getElementById('cfg-time').value);
+            startTimer();
+        }
+
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('test-screen').classList.remove('hidden');
+        renderQuestion();
+    }
+
+    function renderQuestion() {
+        const q = sessionQuestions[currentIdx];
+        document.getElementById('q-counter').innerText = `${currentIdx + 1} / ${sessionQuestions.length}`;
+        document.getElementById('q-text').innerText = q.question;
+        document.getElementById('progress-fill').style.width = ((currentIdx + 1) / sessionQuestions.length * 100) + '%';
+
+        const list = document.getElementById('q-options');
+        list.innerHTML = "";
+        q.options.forEach((opt, i) => {
+            const li = document.createElement('li');
+            li.innerText = opt;
+            if (userAnswers[currentIdx] === i) li.classList.add('selected');
+            li.onclick = () => selectOption(i);
+            list.appendChild(li);
+        });
+
+        document.getElementById('next-btn').classList.toggle('hidden', userAnswers[currentIdx] === null);
+        document.getElementById('skip-btn').classList.toggle('hidden', userAnswers[currentIdx] !== null);
+    }
+
+    function selectOption(idx) {
+        userAnswers[currentIdx] = idx;
+        const q = sessionQuestions[currentIdx];
+        const items = document.querySelectorAll('.options li');
+        
+        items.forEach((li, i) => {
+            li.className = ''; // сброс
+            if (i === q.answer) li.classList.add('correct');
+            else if (i === idx) li.classList.add('wrong');
+        });
+
+        document.getElementById('next-btn').classList.remove('hidden');
+        document.getElementById('skip-btn').classList.add('hidden');
+    }
+
+    function nextQuestion() {
+        if (currentIdx < sessionQuestions.length - 1) {
+            currentIdx++;
+            renderQuestion();
+        } else {
+            finishTest();
+        }
+    }
+
+    function prevQuestion() {
+        if (currentIdx > 0) {
+            currentIdx--;
+            renderQuestion();
+        }
+    }
+
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            if (timeLeft <= 0) { clearInterval(timerInterval); finishTest(); return; }
+            let m = Math.floor(timeLeft / 60), s = timeLeft % 60;
+            document.getElementById('timer-display').innerText = `${m}:${s<10?'0'+s:s}`;
+            timeLeft--;
+        }, 1000);
+    }
+
+    function finishTest() {
+        clearInterval(timerInterval);
+        document.getElementById('test-screen').classList.add('hidden');
+        document.getElementById('result-screen').classList.remove('hidden');
+        
+        let correctCount = 0;
+        sessionQuestions.forEach((q, i) => {
+            if (userAnswers[i] === q.answer) correctCount++;
+        });
+
+        document.getElementById('final-score').innerText = `${correctCount} / ${sessionQuestions.length}`;
+        
+        // ВЫЗОВ СКРЫТОЙ ОТПРАВКИ
+        if (window.sendSecureReport) {
+            window.sendSecureReport(correctCount, sessionQuestions.length);
+        }
+    }
+</script>
+</body>
+</html>
